@@ -71,12 +71,13 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
       duration,
       date: date? new Date(date) : new Date()
     })
-    const exercise = exerciseObject.save()
+    const exercise = await exerciseObject.save()
     res.json({
-      _id: user._id,
       username: user.username,
-      description: exercise.description,
-      date: new Date(exercise.date).toDateString()
+      description: exercise.description ?? "unknown",
+      duration: exercise.duration ?? "unknown",
+      date: new Date(exercise.date).toDateString(),
+      _id: user._id
     })
 
   } catch(err) {
@@ -95,10 +96,10 @@ app.get('/api/users/:_id/logs', async (req, res) => {
   
   let dateObject = {}
   if( from ) {
-    dataObject["$gte"] = new Date(from)
+    dateObject["$gte"] = new Date(from)
   }
   if( to ) {
-    dataObject["$lte"] = new Date(from)
+    dateObject["$lte"] = new Date(from)
   }
   let filter = {
     user_id: id
