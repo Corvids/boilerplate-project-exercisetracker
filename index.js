@@ -29,6 +29,16 @@ app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html')
 });
 
+app.get('/api/users', async (req, res) => {
+  const users = await User.find({}).select("_id username")
+
+  if( !users ) {
+    res.send("No users :(")
+  } else {
+    res.json(users)
+  }
+})
+
 app.post('/api/users', async (req, res) => {  
   const userObject = new User({
     username: req.body.username
@@ -72,6 +82,42 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
   } catch(err) {
     console.log(err)
   }
+})
+
+app.get('/api/users/:_id/logs', async (req, res) => {
+  const { from, to, limit } = req.query
+  const id = req.params._id
+  const user = await User.findById(id)
+
+  if( !user ) {
+    res.send(`No user exists with the id ${id} :(`)
+  }
+  
+  let dateObject = {}
+  if( from ) {
+    dataObject["$gte"] = new Date(from)
+  }
+  if( to ) {
+    dataObject["$lte"] = new Date(from)
+  }
+  let filter = {
+    user_id: id
+  }
+  if( from || to )  {
+    filter.date = dateObject
+  }
+
+  const exercises = await Exercise.find(filter).limit(+limit ?? 500)
+  res.json({
+    username: user.username ?? "unknown",
+    count: exercises.length,
+    _id: user._id ?? "unknown",
+    log: exercises.map( exercise => ({
+      description: exercise.description,
+      duration: exercise.duration,
+      date: exercise.date.toDateString()
+    }))
+  })
 })
 
 const listener = app.listen(process.env.PORT || 3000, () => {
